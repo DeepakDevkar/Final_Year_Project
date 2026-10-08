@@ -76,6 +76,7 @@
     <span class="brand">Atlas</span>
     <nav aria-label="Map style">
       <button data-style="street" aria-pressed="true">Street</button>
+      <button data-style="satellite" aria-pressed="false">Satellite</button>
       <button data-style="topo" aria-pressed="false">Terrain</button>
       <button data-style="light" aria-pressed="false">Light</button>
       <button id="locate" aria-pressed="false">My location</button>
@@ -95,6 +96,7 @@
 </div>
 
 <script>
+  const status = document.getElementById('status');
   // ---- Map setup (starts centered on Pune, India) ----
   const map = L.map('map', { zoomControl: false }).setView([18.5204, 73.8567], 12);
   L.control.zoom({ position: 'topright' }).addTo(map);
@@ -103,17 +105,25 @@
 
   // Free tile providers (no API key needed)
   const layers = {
-    street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    street: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20, subdomains: 'abcd',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }),
-    topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-      maxZoom: 17, attribution: 'Map data &copy; OpenStreetMap contributors, SRTM | Style &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics'
+    }),
+    topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, attribution: 'Tiles &copy; Esri, HERE, Garmin, USGS, OpenStreetMap contributors'
     }),
     light: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      maxZoom: 20, subdomains: 'abcd',
+      attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
     })
   };
   let current = layers.street.addTo(map);
+  Object.values(layers).forEach(l => l.on('tileerror', () => {
+    status.textContent = 'Some map tiles failed to load. Check your internet connection.';
+  }));
 
   // ---- Style switcher ----
   document.querySelectorAll('nav [data-style]').forEach(btn => {
@@ -131,21 +141,23 @@
     marker = L.marker([lat, lng]).addTo(map).bindPopup(label).openPopup();
   }
 
-  // ---- Search via Nominatim (free OpenStreetMap geocoder) ----
-  const status = document.getElementById('status');
+  // ---- Search via Photon (free geocoder built on OpenStreetMap data) ----
   document.getElementById('searchForm').addEventListener('submit', async e => {
     e.preventDefault();
     const q = document.getElementById('q').value.trim();
     if (!q) return;
     status.textContent = 'Searching…';
     try {
-      const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+      const res = await fetch('https://photon.komoot.io/api/?limit=1&q=' + encodeURIComponent(q));
       const data = await res.json();
-      if (!data.length) { status.textContent = 'No place found. Try a different name.'; return; }
-      const p = data[0];
-      map.flyTo([+p.lat, +p.lon], 13, { duration: 1.5 });
-      drop(+p.lat, +p.lon, p.display_name);
-      status.textContent = 'Showing: ' + p.display_name;
+      if (!data.features || !data.features.length) { status.textContent = 'No place found. Try a different name.'; return; }
+      const f = data.features[0];
+      const [lon, lat] = f.geometry.coordinates;
+      const pr = f.properties;
+      const name = [pr.name, pr.city, pr.state, pr.country].filter((v, i, a) => v && a.indexOf(v) === i).join(', ');
+      map.flyTo([lat, lon], 13, { duration: 1.5 });
+      drop(lat, lon, name);
+      status.textContent = 'Showing: ' + name;
     } catch (err) {
       status.textContent = 'Search failed. Check your internet connection.';
     }
