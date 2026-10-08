@@ -1,0 +1,51 @@
+:root {
+  --panel: rgba(255, 253, 248, 0.94);
+  --ink: #1d2b36;
+  --muted: #5b6b77;
+  --accent: #0b6e6e;
+  --line: #d9d4c7;
+}
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body { font-family: "Trebuchet MS", "Segoe UI", sans-serif; color: var(--ink); }
+
+/* Map fills the whole screen, behind everything */
+.map { position: fixed; inset: 0; z-index: 0; }
+
+.topbar, .card {
+  position: fixed; z-index: 1000;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; backdrop-filter: blur(6px);
+}
+.topbar {
+  top: 16px; left: 16px; right: 16px; padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.brand { font-weight: 700; font-size: 1.15rem; color: var(--accent); }
+nav { display: flex; gap: 6px; flex-wrap: wrap; }
+nav button {
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+  padding: 7px 12px; border-radius: 6px; font: inherit; font-size: 0.9rem; cursor: pointer;
+}
+nav button:hover { border-color: var(--accent); }
+nav button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 3px solid #e0a800; outline-offset: 2px; }
+
+.card { left: 16px; bottom: 28px; width: min(360px, calc(100% - 32px)); padding: 18px; }
+.card h1 { margin: 0 0 6px; font-size: 1.45rem; line-height: 1.2; }
+.card p { margin: 0 0 14px; color: var(--muted); line-height: 1.5; font-size: 0.95rem; }
+.search { display: flex; gap: 8px; }
+.search input {
+  flex: 1; min-width: 0; padding: 9px 11px; font: inherit;
+  border: 1px solid var(--line); border-radius: 6px; background: #fff;
+}
+.search button {
+  padding: 9px 14px; border: 0; border-radius: 6px;
+  background: var(--accent); color: #fff; font: inherit; cursor: pointer;
+}
+.status { margin-top: 10px; min-height: 1.2em; font-size: 0.85rem; color: var(--muted); }
+.coords { margin-top: 4px; font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) {
+  .topbar { flex-direction: column; align-items: flex-start; }
+}
